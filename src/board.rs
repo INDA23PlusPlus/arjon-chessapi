@@ -1,13 +1,35 @@
+// This needs to be a macro, otherwise the borrow checker goes bonkers
+macro_rules! at {
+    ($self:expr, $pos:expr) => {
+        $self.board[$pos.row as usize][$pos.col as usize]
+    };
+}
+
+mod legal_move;
 mod default;
+
+pub use self::default::*;
+pub use self::legal_move::*;
 pub const BOARD_ROW_COUNT: usize = 8;
 pub const BOARD_COL_COUNT: usize = 8;
 pub(crate) const WHITE_KING_STARTING_POS: Position = Position {col: 4, row: 7};
 pub(crate) const BLACK_KING_STARTING_POS: Position = Position {col: 4, row: 0};
+pub(crate) const WHITE_PAWN_STARTING_ROW: i8 = 6;
+pub(crate) const BLACK_PAWN_STARTING_ROW: i8 = 1;
+pub(crate) const WHITE_EN_PASSANT_FROM_ROW: i8 = 3;
+pub(crate) const BLACK_EN_PASSANT_FROM_ROW: i8 = 4;
 
+extern crate num_traits;
+
+use self::num_traits::*;
 use std::mem;
+use std::ops::*;
 use crate::piece::{Color, Piece, PieceType};
 
+// None => empty square, Some(Piece) => square occupied by Piece
 pub type SquareType = Option<Piece>;
+pub type RefSquareType<'a> = Option<&'a Piece>;
+pub type MutSquareType<'a> = Option<&'a mut Piece>;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum BoardError {
@@ -41,32 +63,58 @@ pub struct Position {
     col: i8,
 }
 
+impl Position {
+    fn abs(&self) -> Self {
+        Self {row: self.row.abs(), col: self.col.abs() }
+    }
+}
+
+impl Add for Position {
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self::Output {
+        Self {col: self.col + rhs.col, row: self.row + rhs.row }
+    }
+}
+
+impl Sub for Position {
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self { row: self.row - rhs.row, col: self.col - rhs.col }
+    }
+}
+
+impl AddAssign for Position {
+    fn add_assign(&mut self, rhs: Self) {
+        self.col += rhs.col;
+        self.row += rhs.row;
+    }
+}
+
+impl<T: PrimInt + Into<i8> + From<i8>> Div<T> for Position {
+    type Output = Self;
+    fn div(self, rhs: T) -> Self::Output {
+        let rhs_i8: i8 = rhs.into();
+        Self { col: self.col / rhs_i8, row: self.row / rhs_i8 }
+    }
+}
+
+
+impl Position {
+    pub(crate) fn out_of_bounds(&self) -> bool {
+           self.col < 0
+        || self.col >= BOARD_COL_COUNT as i8
+        || self.row < 0
+        || self.row >= BOARD_ROW_COUNT as i8
+    }
+}
+
 // Pass this struct as an argument when you want to make a move
 #[derive(Debug, Clone)]
 pub struct Move {
     from: Position,
     to: Position,
-    promotion: Option<Piece>,
-}
-
-// Used to get mutable and immutable access under the same function
-trait BoardAccess {
-    type T;
-    fn at(self, pos: &Position) -> Self::T;
-}
-
-impl<'a> BoardAccess for &'a Board {
-    type T = &'a SquareType;
-    fn at(self, pos: &Position) -> Self::T {
-        &self.board[pos.row as usize][pos.col as usize]
-    }
-}
-
-impl<'a> BoardAccess for &'a mut Board {
-    type T = &'a mut SquareType;
-    fn at(self, pos: &Position) -> Self::T {
-        &mut self.board[pos.row as usize][pos.col as usize]
-    }
+    // Set this to Some(PieceType) if promotion is necessary
+    promotion: Option<PieceType>,
 }
 
 impl Board {
@@ -76,18 +124,6 @@ impl Board {
     }
 
     fn is_own_king_attacked_after_move(&self, mv: &Move) -> bool {
-        todo!();
-    }
-
-    fn is_legal(&self, mv: &Move) -> bool {
-        if *self.at(&mv.from) == None { return false; }
-
-        let piece = &self.at(&mv.from).unwrap();
-        let piece2 = &self.at(&mv.from).unwrap();
-        if piece.color != self.turn { return false; }
-
-
-
         todo!();
     }
 
@@ -116,7 +152,6 @@ impl Board {
     }
 
     pub fn make_move(&mut self, mv: Move) -> Result<(), BoardError> {
-
         if self.is_legal(&mv) == false {
             return Err(BoardError::IllegalMove);
         }
@@ -129,7 +164,8 @@ impl Board {
         // Reset en passant
         self.en_passant_col = -1;
 
-        let piece = self.at(&mv.from).unwrap();
+
+        let piece = at!(self, mv.from).as_ref().unwrap();
 
         match piece.piece_type {
             PieceType::Pawn => {
@@ -139,7 +175,7 @@ impl Board {
                 }
                 // Promote pawn
                 else if (mv.to.row == 0) || (mv.to.row == (BOARD_ROW_COUNT as i8) - 1) {
-                    *self.at(&mv.from) = mv.promotion;
+                    at!(self, &mv.from).as_mut().unwrap().piece_type = *mv.promotion.as_ref().unwrap();
                 }
             }
 
@@ -165,7 +201,7 @@ impl Board {
         };
 
         // Move the piece into the new position, replacing it with None in the process
-        *self.at(&mv.to) = mem::replace(self.at(&mv.from), None);
+        at!(self, mv.to) = mem::replace(&mut at!(self, mv.from), None);
 
 
         Ok(())
