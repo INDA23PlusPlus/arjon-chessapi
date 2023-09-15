@@ -19,5 +19,3 @@ pub struct Piece {
     pub(crate) piece_type: PieceType,
     pub(crate) color: Color,
 }
-
-
