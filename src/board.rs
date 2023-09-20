@@ -6,17 +6,46 @@ macro_rules! at {
 }
 
 mod default;
+mod generate_moves;
 mod is_attacked;
-mod legal_move;
+mod is_legal;
 
 pub use self::default::*;
-pub use self::legal_move::*;
+pub use self::generate_moves::*;
+pub use self::is_legal::*;
 pub const BOARD_ROW_COUNT: usize = 8;
 pub const BOARD_COL_COUNT: usize = 8;
-pub(crate) const WHITE_KING_STARTING_POS: Position = Position { col: 4, row: 7 };
-pub(crate) const BLACK_KING_STARTING_POS: Position = Position { col: 4, row: 0 };
-pub(crate) const WHITE_PAWN_STARTING_ROW: i8 = 6;
-pub(crate) const BLACK_PAWN_STARTING_ROW: i8 = 1;
+pub(crate) const BLACK_PIECE_STARTING_ROW: i8 = 0;
+pub(crate) const WHITE_PIECE_STARTING_ROW: i8 = BOARD_ROW_COUNT as i8 - 1;
+pub(crate) const BLACK_PAWN_STARTING_ROW: i8 = BLACK_PIECE_STARTING_ROW + 1;
+pub(crate) const WHITE_PAWN_STARTING_ROW: i8 = WHITE_PIECE_STARTING_ROW - 1;
+pub(crate) const KING_STARTING_COL: i8 = 4;
+pub(crate) const ROOK_LONG_STARTING_COL: i8 = 0;
+pub(crate) const ROOK_SHORT_STARTING_COL: i8 = BOARD_COL_COUNT as i8 - 1;
+pub(crate) const WHITE_KING_STARTING_POS: Position = Position {
+    row: WHITE_PIECE_STARTING_ROW,
+    col: KING_STARTING_COL,
+};
+pub(crate) const BLACK_KING_STARTING_POS: Position = Position {
+    row: BLACK_PIECE_STARTING_ROW,
+    col: KING_STARTING_COL,
+};
+pub(crate) const BLACK_ROOK_LONG_STARTING_POS: Position = Position {
+    row: BLACK_PIECE_STARTING_ROW,
+    col: ROOK_LONG_STARTING_COL,
+};
+pub(crate) const BLACK_ROOK_SHORT_STARTING_POS: Position = Position {
+    row: BLACK_PIECE_STARTING_ROW,
+    col: ROOK_SHORT_STARTING_COL,
+};
+pub(crate) const WHITE_ROOK_LONG_STARTING_POS: Position = Position {
+    row: WHITE_PIECE_STARTING_ROW,
+    col: ROOK_LONG_STARTING_COL,
+};
+pub(crate) const WHITE_ROOK_SHORT_STARTING_POS: Position = Position {
+    row: WHITE_PIECE_STARTING_ROW,
+    col: ROOK_SHORT_STARTING_COL,
+};
 pub(crate) const WHITE_EN_PASSANT_FROM_ROW: i8 = 3;
 pub(crate) const BLACK_EN_PASSANT_FROM_ROW: i8 = 4;
 
@@ -60,11 +89,12 @@ pub struct Board {
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Position {
-    row: i8,
-    col: i8,
+    pub(crate) row: i8,
+    pub(crate) col: i8,
 }
 
 impl Position {
+    #[inline]
     fn abs(&self) -> Self {
         Self {
             row: self.row.abs(),
@@ -75,6 +105,7 @@ impl Position {
 
 impl Add for Position {
     type Output = Self;
+    #[inline]
     fn add(self, rhs: Self) -> Self::Output {
         Self {
             col: self.col + rhs.col,
@@ -85,6 +116,7 @@ impl Add for Position {
 
 impl Sub for Position {
     type Output = Self;
+    #[inline]
     fn sub(self, rhs: Self) -> Self::Output {
         Self {
             row: self.row - rhs.row,
@@ -123,10 +155,10 @@ impl Position {
 // Pass this struct as an argument when you want to make a move
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Move {
-    from: Position,
-    to: Position,
+    pub(crate) from: Position,
+    pub(crate) to: Position,
     // Set this to Some(PieceType) if promotion is necessary
-    promotion: Option<PieceType>,
+    pub(crate) promotion: Option<PieceType>,
 }
 
 impl Board {
@@ -135,45 +167,92 @@ impl Board {
         Default::default()
     }
 
-    fn get_legal_moves_piece(&self, pos: &Position) -> Vec<Move> {
-        todo!();
-    }
-
     /*
      * Iterate through a all squares and and call get_legal_moves_piece() on every square that
      * holds a piece of the correct color
      */
-    pub fn get_legal_moves(&self) -> Vec<Move> {
-        let mut moves: Vec<Move> = Vec::new();
+
+    #[inline]
+    fn dir(color: &Color) -> i8 {
+        match color {
+            Color::White => -1,
+            Color::Black => 1,
+        }
+    }
+
+    fn is_stalemate(&self) -> bool {
+        self.generate_legal_moves().is_empty()
+            && !self.is_attacked_by_opponent(&match self.turn {
+                Color::White => self.white_king_pos,
+                Color::Black => self.black_king_pos,
+            })
+    }
+
+    fn is_checkmate(&self) -> bool {
+        self.generate_legal_moves().is_empty()
+            && self.is_attacked_by_opponent(&match self.turn {
+                Color::White => self.white_king_pos,
+                Color::Black => self.black_king_pos,
+            })
+    }
+
+    pub fn print_board(&self) {
         for row in 0..BOARD_ROW_COUNT {
             for col in 0..BOARD_COL_COUNT {
-                if self.board[row][col] == None {
-                    continue;
-                }
-                if self.board[row][col].as_ref().unwrap().color != self.turn {
-                    continue;
-                }
-                moves.append(&mut self.get_legal_moves_piece(&Position {
-                    row: row as i8,
-                    col: col as i8,
-                }));
+                print!(
+                    "{}",
+                    self.board[row][col]
+                        .as_ref()
+                        .map_or("·", |piece| match piece.color {
+                            Color::White => match piece.piece_type {
+                                PieceType::Pawn => "P",
+                                PieceType::Rook => "R",
+                                PieceType::Knight => "N",
+                                PieceType::Bishop => "B",
+                                PieceType::Queen => "Q",
+                                PieceType::King => "K",
+                            },
+                            Color::Black => match piece.piece_type {
+                                PieceType::Pawn => "p",
+                                PieceType::Rook => "r",
+                                PieceType::Knight => "n",
+                                PieceType::Bishop => "b",
+                                PieceType::Queen => "q",
+                                PieceType::King => "k",
+                            },
+                        })
+                );
             }
+            println!();
         }
-        moves
     }
 
     // Makes a move without checking if it's legal
-    fn unsafe_make_move(&mut self, mv: &Move) {
-        // Basically flipping the value
-        self.turn = match self.turn {
-            Color::White => Color::Black,
-            Color::Black => Color::White,
-        };
+    fn unsafe_make_move(&mut self, mv: &Move) -> Result<(), BoardError> {
+        self.turn = self.turn.flip();
 
         // Reset en passant
         self.en_passant_col = -1;
 
-        let piece = at!(self, mv.from).as_ref().unwrap();
+        let piece = match at!(self, mv.from).as_ref() {
+            None => return Err(BoardError::IllegalMove),
+            Some(piece) => piece,
+        };
+
+        match mv.to {
+            WHITE_ROOK_SHORT_STARTING_POS => self.short_castle_white = false,
+            WHITE_ROOK_LONG_STARTING_POS => self.long_castle_white = false,
+            BLACK_ROOK_SHORT_STARTING_POS => self.short_castle_black = false,
+            BLACK_ROOK_LONG_STARTING_POS => self.long_castle_black = false,
+            _ => {}
+        };
+        match mv.from {
+            WHITE_ROOK_SHORT_STARTING_POS => self.short_castle_white = false,
+            WHITE_ROOK_LONG_STARTING_POS => self.long_castle_white = false,
+            BLACK_ROOK_SHORT_STARTING_POS => self.short_castle_black = false,
+            BLACK_ROOK_LONG_STARTING_POS => self.long_castle_black = false,
+            _ => {}
+        };
 
         match piece.piece_type {
             PieceType::Pawn => {
@@ -185,6 +264,17 @@ impl Board {
                 else if (mv.to.row == 0) || (mv.to.row == (BOARD_ROW_COUNT as i8) - 1) {
                     at!(self, &mv.from).as_mut().unwrap().piece_type =
                         *mv.promotion.as_ref().unwrap();
+                }
+                // If capture using en passant
+                if (mv.to.col - mv.from.col).abs() == 1 && at!(self, mv.to).is_none() {
+                    // Remove captured piece
+                    at!(
+                        self,
+                        Position {
+                            row: mv.from.row,
+                            col: mv.to.col,
+                        }
+                    ) = None;
                 }
             }
 
@@ -207,27 +297,24 @@ impl Board {
 
                 // Move the rook if castling
                 if (mv.from.col - mv.to.col).abs() >= 2 {
-                    let dir = (mv.from.col - mv.to.col) / (mv.from.col - mv.to.col).abs();
+                    let dir = (mv.to.col - mv.from.col) / (mv.to.col - mv.from.col).abs();
                     let mut rook_pos = mv.from.clone();
                     rook_pos.col += dir;
 
                     at!(self, rook_pos) = mem::replace(
-                        &mut match dir > 0 {
-                            true => at!(
-                                self,
-                                Position {
+                        &mut at!(
+                            self,
+                            match dir > 0 {
+                                true => Position {
                                     row: mv.from.row,
-                                    col: BOARD_COL_COUNT as i8 - 1
-                                }
-                            ),
-                            false => at!(
-                                self,
-                                Position {
+                                    col: ROOK_SHORT_STARTING_COL,
+                                },
+                                false => Position {
                                     row: mv.from.row,
-                                    col: 0
-                                }
-                            ),
-                        },
+                                    col: ROOK_LONG_STARTING_COL,
+                                },
+                            }
+                        ),
                         None,
                     )
                 }
@@ -238,13 +325,13 @@ impl Board {
 
         // Move the piece into the new position, replacing it with None in the process
         at!(self, mv.to) = mem::replace(&mut at!(self, mv.from), None);
+        Ok(())
     }
 
     pub fn make_move(&mut self, mv: &Move) -> Result<(), BoardError> {
         if self.is_legal(&mv) == false {
             return Err(BoardError::IllegalMove);
         }
-        self.unsafe_make_move(mv);
-        Ok(())
+        self.unsafe_make_move(mv)
     }
 }

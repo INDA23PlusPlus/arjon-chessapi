@@ -2,10 +2,25 @@ use board::*;
 use piece::PieceType;
 
 impl Board {
+    #[inline]
+    pub fn retain_legal_capturing(&self, moves: Vec<Move>) -> Vec<Move> {
+        self.retain_legal(self.retain_capturing(moves))
+    }
+    #[inline]
+    pub fn retain_legal(&self, mut moves: Vec<Move>) -> Vec<Move> {
+        moves.retain(|mv| self.is_legal(mv));
+        moves
+    }
+    #[inline]
+    pub fn retain_capturing(&self, mut moves: Vec<Move>) -> Vec<Move> {
+        moves.retain(|mv| !mv.to.out_of_bounds() && at!(self, mv.to).is_some());
+        moves
+    }
     fn is_own_king_attacked_after_move(&self, mv: &Move) -> bool {
         let mut board_copy = self.clone();
-        board_copy.unsafe_make_move(mv);
-        board_copy.is_attacked(&match self.turn {
+        board_copy.unsafe_make_move(mv).unwrap();
+
+        board_copy.is_attacked_by_player(&match self.turn {
             Color::White => board_copy.white_king_pos,
             Color::Black => board_copy.black_king_pos,
         })
@@ -13,6 +28,16 @@ impl Board {
     fn is_legal_pawn(&self, mv: &Move) -> bool {
         let dcol = (mv.to.col - mv.from.col).abs();
         let drow = mv.to.row - mv.from.row;
+
+        // If promotion necessary
+        if (mv.to.row == 0 || mv.to.row == BOARD_ROW_COUNT as i8 - 1)
+            && (mv
+                .promotion
+                .as_ref()
+                .map_or(true, |piece_type| *piece_type == PieceType::Pawn))
+        {
+            return false;
+        }
 
         let dir: i8 = match self.turn {
             Color::White => -1,
@@ -129,11 +154,66 @@ impl Board {
         }
 
         // Castling
-        todo!("Castling");
-        true
+        let long_castle = match self.turn {
+            Color::White => self.long_castle_white,
+            Color::Black => self.long_castle_black,
+        };
+        let short_castle = match self.turn {
+            Color::White => self.short_castle_white,
+            Color::Black => self.short_castle_black,
+        };
+
+        let king_pos = match self.turn {
+            Color::White => self.white_king_pos,
+            Color::Black => self.black_king_pos,
+        };
+
+        if dpos.col == 2 && dpos.row == 0 {
+            let intermediary_pos = (mv.from + mv.to) / 2;
+
+            // Castling is not legal if this square is attacked
+            if self.is_attacked_by_opponent(&intermediary_pos) {
+                return false;
+            }
+            // Short castle moves toward higher col counts
+            let is_short_castle = (mv.to.col - mv.from.col) > 0;
+            let rook_pos: Position;
+
+            if is_short_castle {
+                if !short_castle {
+                    return false;
+                }
+                rook_pos = match self.turn {
+                    Color::White => WHITE_ROOK_SHORT_STARTING_POS,
+                    Color::Black => BLACK_ROOK_SHORT_STARTING_POS,
+                };
+            } else
+            /* is_long_castle */
+            {
+                if !long_castle {
+                    return false;
+                }
+                rook_pos = match self.turn {
+                    Color::White => WHITE_ROOK_LONG_STARTING_POS,
+                    Color::Black => BLACK_ROOK_LONG_STARTING_POS,
+                };
+            }
+            // get_moves_adjacent()
+            // will return all possible moves without checking
+            // if it is actually legal to capture your own king.
+            // This will ensure that there is a clear path between the rook and the king
+            return self
+                .generate_moves_line(&rook_pos, &vec![[0, 1], [0, -1]])
+                .contains(&Move {
+                    from: rook_pos,
+                    to: king_pos,
+                    promotion: None,
+                });
+        }
+        false
     }
 
-    pub(in board) fn is_legal(&self, mv: &Move) -> bool {
+    pub(crate) fn is_legal(&self, mv: &Move) -> bool {
         // Check that the move is within the chessboard
         if mv.from.out_of_bounds() || mv.to.out_of_bounds() {
             return false;

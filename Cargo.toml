@@ -6,3 +6,4 @@ version = "0.1.0"
 
 [dependencies]
 num-traits = "0.2"
+rand = { version = "0.8.5", features = [] }
