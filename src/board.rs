@@ -89,8 +89,8 @@ pub struct Board {
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Position {
-    pub(crate) row: i8,
-    pub(crate) col: i8,
+    pub row: i8,
+    pub col: i8,
 }
 
 impl Position {
@@ -155,16 +155,25 @@ impl Position {
 // Pass this struct as an argument when you want to make a move
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct Move {
-    pub(crate) from: Position,
-    pub(crate) to: Position,
+    pub from: Position,
+    pub to: Position,
     // Set this to Some(PieceType) if promotion is necessary
-    pub(crate) promotion: Option<PieceType>,
+    pub promotion: Option<PieceType>,
 }
 
 impl Board {
     // Generates a new board with the default starting position
-    pub fn new() -> Board {
+    #[inline]
+    pub fn new() -> Self {
         Default::default()
+    }
+    #[inline]
+    pub fn get_board(&self) -> [[SquareType; 8]; 8] {
+        self.board.clone()
+    }
+
+    pub fn whose_turn(&self) -> Color {
+        self.turn.clone()
     }
 
     /*
@@ -180,7 +189,7 @@ impl Board {
         }
     }
 
-    fn is_stalemate(&self) -> bool {
+    pub fn is_stalemate(&self) -> bool {
         self.generate_legal_moves().is_empty()
             && !self.is_attacked_by_opponent(&match self.turn {
                 Color::White => self.white_king_pos,
@@ -188,7 +197,7 @@ impl Board {
             })
     }
 
-    fn is_checkmate(&self) -> bool {
+    pub fn is_checkmate(&self) -> bool {
         self.generate_legal_moves().is_empty()
             && self.is_attacked_by_opponent(&match self.turn {
                 Color::White => self.white_king_pos,
@@ -225,6 +234,7 @@ impl Board {
             }
             println!();
         }
+        println!();
     }
 
     // Makes a move without checking if it's legal

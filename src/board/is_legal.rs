@@ -213,7 +213,7 @@ impl Board {
         false
     }
 
-    pub(crate) fn is_legal(&self, mv: &Move) -> bool {
+    pub fn is_legal(&self, mv: &Move) -> bool {
         // Check that the move is within the chessboard
         if mv.from.out_of_bounds() || mv.to.out_of_bounds() {
             return false;
