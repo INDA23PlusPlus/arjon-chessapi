@@ -30,11 +30,10 @@ impl Board {
         let drow = mv.to.row - mv.from.row;
 
         // If promotion necessary
-        if (mv.to.row == 0 || mv.to.row == BOARD_ROW_COUNT as i8 - 1)
-            && (mv
-                .promotion
-                .as_ref()
-                .map_or(true, |piece_type| *piece_type == PieceType::Pawn))
+        if (mv.to.row == WHITE_PIECE_STARTING_ROW || mv.to.row == BLACK_PIECE_STARTING_ROW)
+            && (mv.promotion.as_ref().map_or(true, |piece_type| {
+                *piece_type == PieceType::Pawn || *piece_type == PieceType::King
+            }))
         {
             return false;
         }
@@ -129,7 +128,7 @@ impl Board {
 
         for _ in 0..(steps - 1) {
             curr_pos += step;
-            if at!(self, curr_pos) != None {
+            if at!(self, curr_pos).is_some() {
                 return false;
             }
         }
