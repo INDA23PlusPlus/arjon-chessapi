@@ -170,6 +170,10 @@ impl Board {
         if dpos.col == 2 && dpos.row == 0 {
             let intermediary_pos = (mv.from + mv.to) / 2;
 
+            // Not legal to castle out of check
+            if self.is_attacked_by_opponent(&mv.from) {
+                return false;
+            }
             // Castling is not legal if this square is attacked
             if self.is_attacked_by_opponent(&intermediary_pos) {
                 return false;
