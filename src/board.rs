@@ -69,7 +69,8 @@ pub enum BoardError {
 #[derive(Debug, Clone)]
 pub struct Board {
     // The representation of the board. Value is Some(Piece) if occupied, otherwise None
-    board: [[SquareType; 8]; 8],
+    // Public in lib.rs for debugging purposes
+    pub(super) board: [[SquareType; 8]; 8],
 
     // Useful for checking if king will be attacked after a specific move
     white_king_pos: Position,

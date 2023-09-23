@@ -5,7 +5,7 @@ impl Board {
     // Use this method when you want to check which pieces
     // the opponent will attack after you've made your move
     pub(in board) fn is_attacked_by_opponent(&self, pos: &Position) -> bool {
-        self.is_attacked(pos, &self.turn.flip())
+        self.is_attacked(pos, &self.turn.clone().flip())
     }
     // Use this method when you want to check which pieces
     // are currently under attack. E.g. white queen is under

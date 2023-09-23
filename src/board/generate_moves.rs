@@ -38,7 +38,7 @@ impl Board {
                 ]
                 .concat(),
                 PieceType::King => self.generate_moves_king(pos),
-            };
+            }
         }
 
         moves

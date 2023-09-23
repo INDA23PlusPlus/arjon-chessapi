@@ -1,9 +1,11 @@
+#[macro_use]
 mod board;
 mod piece;
 extern crate rand;
 
 use board::{Move, Position};
 
+#[inline]
 fn to_cordinate(c: char) -> i8 {
     if c >= 'a' && c <= 'h' {
         return c as i8 - 'a' as i8;
@@ -11,6 +13,7 @@ fn to_cordinate(c: char) -> i8 {
     7 - (c as i8 - '1' as i8)
 }
 
+#[inline]
 fn convert(mv: &str) -> Move {
     let x: Vec<char> = mv.chars().collect();
     Move {
@@ -28,14 +31,66 @@ fn convert(mv: &str) -> Move {
 
 #[cfg(test)]
 mod tests {
-    use board::Board;
-    use convert;
-    use piece::PieceType::Queen;
+    use board::*;
+    use piece::PieceType;
     use std::fmt::Debug;
+    use std::mem::swap;
+    use {board, convert};
+
+    // Test according to Shannon number
+    #[test]
+    fn test() {
+        let mut prev: Vec<Board> = vec![Board::new()];
+        let mut curr: Vec<Board> = vec![];
+        let expected = vec![20, 400, 8902, 197281, 4865609];
+        let ep_expected = vec![0, 0, 0, 0, 258];
+        let cm_expected = vec![0, 0, 0, 8, 347];
+
+        let mut ep;
+        let mut cm;
+
+        let n = 5;
+        for current in 0..n {
+            cm = 0;
+            ep = 0;
+            println!("Test {}.", current);
+            curr = Vec::new();
+            for board in &prev {
+                let moves = board.generate_legal_moves();
+                for mv in moves {
+                    let mut x = board.clone();
+                    if at!(board, mv.from).as_ref().unwrap().piece_type == PieceType::Pawn {
+                        if mv.to.col - mv.from.col != 0 && at!(board, mv.to).as_ref().is_none() {
+                            ep += 1;
+                        }
+                    }
+                    x.make_move(&mv).unwrap();
+                    if x.is_checkmate() {
+                        cm += 1;
+                    }
+                    curr.push(x);
+                }
+            }
+            swap(&mut prev, &mut curr);
+            println!("No. of cm: {}", cm);
+            println!("No. of e.p.: {}", ep);
+            println!("Generated moves = {}", prev.len());
+            println!("Expected no. of moves = {}", expected[current]);
+
+            assert_eq!(cm, cm_expected[current]);
+            assert_eq!(ep, ep_expected[current]);
+
+            // I know this is 35 leaves (0.0007%) off att ply 5.
+            // Haven't figured out the problem yet.
+            // I might be counting the leaves incorrectly.
+            assert_eq!(prev.len(), expected[current]);
+            println!();
+        }
+    }
 
     #[test]
     fn game_with_en_passant_castling_and_checkmate() {
-        let mut moves: Vec<(&str)> = vec![
+        let mut moves: Vec<&str> = vec![
             "e2e4", "e7e5", "g1f3", "b8c6", "f1c4", "g8f6", "d2d3", "f8c5", "e1g1", "e8g8",
         ];
 
@@ -103,7 +158,7 @@ mod tests {
         board.make_move(&convert("h6h7")).unwrap();
         board.make_move(&convert("a5a4")).unwrap();
         let mut temp = convert("h7h8");
-        temp.promotion = Some(Queen);
+        temp.promotion = Some(PieceType::Queen);
         board.make_move(&temp).unwrap();
         board.print_board();
         assert_eq!(board.generate_legal_moves().len(), 1);
