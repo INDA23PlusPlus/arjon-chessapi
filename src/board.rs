@@ -5,10 +5,10 @@ macro_rules! at {
     };
 }
 
-mod default;
-mod generate_moves;
+pub mod default;
+pub mod generate_moves;
 mod is_attacked;
-mod is_legal;
+pub mod is_legal;
 
 pub use self::default::*;
 pub use self::generate_moves::*;
@@ -206,7 +206,7 @@ impl Board {
             })
     }
 
-    pub fn print_board(&self) {
+    pub(crate) fn print_board(&self) {
         for row in 0..BOARD_ROW_COUNT {
             for col in 0..BOARD_COL_COUNT {
                 print!(

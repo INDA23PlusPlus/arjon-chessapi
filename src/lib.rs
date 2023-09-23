@@ -1,6 +1,6 @@
 #[macro_use]
-mod board;
-mod piece;
+pub mod board;
+pub mod piece;
 extern crate rand;
 
 use board::{Move, Position};
