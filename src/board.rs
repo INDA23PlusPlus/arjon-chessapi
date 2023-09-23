@@ -88,7 +88,7 @@ pub struct Board {
     turn: Color,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Position {
     pub row: i8,
     pub col: i8,
@@ -154,7 +154,7 @@ impl Position {
 }
 
 // Pass this struct as an argument when you want to make a move
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Move {
     pub from: Position,
     pub to: Position,
