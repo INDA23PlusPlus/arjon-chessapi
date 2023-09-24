@@ -198,6 +198,14 @@ impl Board {
             })
     }
 
+    pub fn is_check(&self) -> bool {
+        !self.generate_legal_moves().is_empty()
+            && self.is_attacked_by_opponent(&match self.turn {
+                Color::White => self.white_king_pos,
+                Color::Black => self.black_king_pos,
+            })
+    }
+
     pub fn is_checkmate(&self) -> bool {
         self.generate_legal_moves().is_empty()
             && self.is_attacked_by_opponent(&match self.turn {
