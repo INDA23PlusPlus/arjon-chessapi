@@ -15,39 +15,39 @@ pub use self::generate_moves::*;
 pub use self::is_legal::*;
 pub const BOARD_ROW_COUNT: usize = 8;
 pub const BOARD_COL_COUNT: usize = 8;
-pub(crate) const BLACK_PIECE_STARTING_ROW: i8 = 0;
-pub(crate) const WHITE_PIECE_STARTING_ROW: i8 = BOARD_ROW_COUNT as i8 - 1;
-pub(crate) const BLACK_PAWN_STARTING_ROW: i8 = BLACK_PIECE_STARTING_ROW + 1;
-pub(crate) const WHITE_PAWN_STARTING_ROW: i8 = WHITE_PIECE_STARTING_ROW - 1;
-pub(crate) const KING_STARTING_COL: i8 = 4;
-pub(crate) const ROOK_LONG_STARTING_COL: i8 = 0;
-pub(crate) const ROOK_SHORT_STARTING_COL: i8 = BOARD_COL_COUNT as i8 - 1;
-pub(crate) const WHITE_KING_STARTING_POS: Position = Position {
+pub const BLACK_PIECE_STARTING_ROW: i8 = 0;
+pub const WHITE_PIECE_STARTING_ROW: i8 = BOARD_ROW_COUNT as i8 - 1;
+pub const BLACK_PAWN_STARTING_ROW: i8 = BLACK_PIECE_STARTING_ROW + 1;
+pub const WHITE_PAWN_STARTING_ROW: i8 = WHITE_PIECE_STARTING_ROW - 1;
+pub const KING_STARTING_COL: i8 = 4;
+pub const ROOK_LONG_STARTING_COL: i8 = 0;
+pub const ROOK_SHORT_STARTING_COL: i8 = BOARD_COL_COUNT as i8 - 1;
+pub const WHITE_KING_STARTING_POS: Position = Position {
     row: WHITE_PIECE_STARTING_ROW,
     col: KING_STARTING_COL,
 };
-pub(crate) const BLACK_KING_STARTING_POS: Position = Position {
+pub const BLACK_KING_STARTING_POS: Position = Position {
     row: BLACK_PIECE_STARTING_ROW,
     col: KING_STARTING_COL,
 };
-pub(crate) const BLACK_ROOK_LONG_STARTING_POS: Position = Position {
+pub const BLACK_ROOK_LONG_STARTING_POS: Position = Position {
     row: BLACK_PIECE_STARTING_ROW,
     col: ROOK_LONG_STARTING_COL,
 };
-pub(crate) const BLACK_ROOK_SHORT_STARTING_POS: Position = Position {
+pub const BLACK_ROOK_SHORT_STARTING_POS: Position = Position {
     row: BLACK_PIECE_STARTING_ROW,
     col: ROOK_SHORT_STARTING_COL,
 };
-pub(crate) const WHITE_ROOK_LONG_STARTING_POS: Position = Position {
+pub const WHITE_ROOK_LONG_STARTING_POS: Position = Position {
     row: WHITE_PIECE_STARTING_ROW,
     col: ROOK_LONG_STARTING_COL,
 };
-pub(crate) const WHITE_ROOK_SHORT_STARTING_POS: Position = Position {
+pub const WHITE_ROOK_SHORT_STARTING_POS: Position = Position {
     row: WHITE_PIECE_STARTING_ROW,
     col: ROOK_SHORT_STARTING_COL,
 };
-pub(crate) const WHITE_EN_PASSANT_FROM_ROW: i8 = 3;
-pub(crate) const BLACK_EN_PASSANT_FROM_ROW: i8 = 4;
+pub const WHITE_EN_PASSANT_FROM_ROW: i8 = 3;
+pub const BLACK_EN_PASSANT_FROM_ROW: i8 = 4;
 
 extern crate num_traits;
 
