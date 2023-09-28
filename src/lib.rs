@@ -80,9 +80,6 @@ mod tests {
             assert_eq!(cm, cm_expected[current]);
             assert_eq!(ep, ep_expected[current]);
 
-            // I know this is 35 leaves (0.0007%) off att ply 5.
-            // Haven't figured out the problem yet.
-            // I might be counting the leaves incorrectly.
             assert_eq!(prev.len(), expected[current]);
             println!();
         }

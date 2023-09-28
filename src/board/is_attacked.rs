@@ -33,9 +33,11 @@ impl Board {
     }
 
     fn is_attacked_by_pawn(&self, pos: &Position, by_color: &Color) -> bool {
+        // Opposite of the normal direction
+        // since we want to see if we could attack a pawn if we were one
         let dir: i8 = match by_color {
-            Color::White => -1,
-            Color::Black => 1,
+            Color::White => 1,
+            Color::Black => -1,
         };
 
         let mut attacks = vec![
