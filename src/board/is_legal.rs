@@ -29,13 +29,19 @@ impl Board {
         let dcol = (mv.to.col - mv.from.col).abs();
         let drow = mv.to.row - mv.from.row;
 
-        // If promotion necessary
-        if (mv.to.row == WHITE_PIECE_STARTING_ROW || mv.to.row == BLACK_PIECE_STARTING_ROW)
-            && (mv.promotion.as_ref().map_or(true, |piece_type| {
+        // If promoting move
+        if mv.to.row == WHITE_PIECE_STARTING_ROW || mv.to.row == BLACK_PIECE_STARTING_ROW {
+            // If disallowed promotion piece
+            if mv.promotion.as_ref().map_or(true, |piece_type| {
                 *piece_type == PieceType::Pawn || *piece_type == PieceType::King
-            }))
-        {
-            return false;
+            }) {
+                return false;
+            }
+        } else {
+            // If promotion piece selected when move is non promoting
+            if mv.promotion.is_some() {
+                return false;
+            }
         }
 
         let dir: i8 = match self.turn {

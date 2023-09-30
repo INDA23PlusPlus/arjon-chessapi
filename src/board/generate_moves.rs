@@ -97,13 +97,19 @@ impl Board {
         ];
 
         for position in positions {
-            moves.push(Move {
-                from: *from,
-                to: position,
-                // Defaults to queen promotion so we don't have
-                // to generate a move for every promotion
-                promotion: Some(PieceType::Queen),
-            });
+            for promotion in [
+                Some(PieceType::Bishop),
+                Some(PieceType::Knight),
+                Some(PieceType::Queen),
+                Some(PieceType::Rook),
+                None,
+            ] {
+                moves.push(Move {
+                    from: *from,
+                    to: position,
+                    promotion: promotion,
+                });
+            }
         }
         moves
     }
